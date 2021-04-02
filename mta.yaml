@@ -1,0 +1,84 @@
+_schema-version: "3.2"
+ID: pruebita
+version: 0.0.1
+modules:
+- name: pruebita-destination-content
+  type: com.sap.application.content
+  requires:
+  - name: pruebita-destination-service
+    parameters:
+      content-target: true
+  - name: pruebita_html_repo_host
+    parameters:
+      service-key:
+        name: pruebita_html_repo_host-key
+  - name: uaa_pruebita
+    parameters:
+      service-key:
+        name: uaa_pruebita-key
+  parameters:
+    content:
+      instance:
+        destinations:
+        - Name: laprueba_pruebita_html_repo_host
+          ServiceInstanceName: pruebita-html5-app-host-service
+          ServiceKeyName: pruebita_html_repo_host-key
+          sap.cloud.service: laprueba
+        - Authentication: OAuth2UserTokenExchange
+          Name: laprueba_uaa_pruebita
+          ServiceInstanceName: pruebita-xsuaa-service
+          ServiceKeyName: uaa_pruebita-key
+          sap.cloud.service: laprueba
+        existing_destinations_policy: ignore
+  build-parameters:
+    no-source: true
+- name: pruebita_ui_deployer
+  type: com.sap.application.content
+  path: .
+  requires:
+  - name: pruebita_html_repo_host
+    parameters:
+      content-target: true
+  build-parameters:
+    build-result: resources
+    requires:
+    - artifacts:
+      - HTML5Module-content.zip
+      name: HTML5Module
+      target-path: resources/
+- name: HTML5Module
+  type: html5
+  path: HTML5Module
+  build-parameters:
+    builder: custom
+    commands:
+    - npm run build
+    supported-platforms: []
+resources:
+- name: pruebita-destination-service
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      HTML5Runtime_enabled: true
+      version: 1.0.0
+    service: destination
+    service-name: pruebita-destination-service
+    service-plan: lite
+- name: pruebita_html_repo_host
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-name: pruebita-html5-app-host-service
+    service-plan: app-host
+- name: uaa_pruebita
+  type: org.cloudfoundry.managed-service
+  parameters:
+    path: ./xs-security.json
+    service: xsuaa
+    service-name: pruebita-xsuaa-service
+    service-plan: application
+build-parameters:
+  before-all:
+  - builder: custom
+    commands:
+    - npm install
